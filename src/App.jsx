@@ -1,5 +1,5 @@
 // App.jsx
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect } from 'react';
 import {
   BrowserRouter as Router,
   Routes,
@@ -24,29 +24,27 @@ const colors = [
 const linkColor = colors[0];
 
 /**
- * CanvasBackground draws our concentric, parallax circles.
- * On route changes, it smoothly shifts the entire pattern up/left.
+ * CanvasBackground draws concentric, mouse‐responsive circles.
+ * On route change it drifts the whole pattern to different corners.
  */
 function CanvasBackground() {
-  const canvasRef = useRef();
+  const canvasRef = useRef(null);
   const mouse = useRef({ x: 0, y: 0 });
-  const loc = useLocation();
-
-  // animated translate for “drifting away”
   const translate = useRef({ x: 0, y: 0 });
   const target = useRef({ x: 0, y: 0 });
+  const loc = useLocation();
 
-  // set new target on route change
+  // update drift target whenever the path changes
   useEffect(() => {
-    if (loc.pathname === '/') {
-      target.current = { x: 0, y: 0 };
-    } else {
-      // drift 30% of viewport up/left
-      target.current = {
-        x: -window.innerWidth * 0.3,
-        y: -window.innerHeight * 0.3,
-      };
-    }
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    const mapping = {
+      '/': { x: 0, y: 0 },
+      '/om': { x: -w * 0.3, y: -h * 0.3 },
+      '/tidligere-prosjekter': { x:  w * 0.3, y: -h * 0.3 },
+      '/priser': { x: -w * 0.3, y:  h * 0.3 },
+    };
+    target.current = mapping[loc.pathname] || { x: 0, y: 0 };
   }, [loc.pathname]);
 
   useEffect(() => {
@@ -55,20 +53,21 @@ function CanvasBackground() {
     let W = (canvas.width = window.innerWidth);
     let H = (canvas.height = window.innerHeight);
 
-    const onResize = () => {
+    const handleResize = () => {
       W = canvas.width = window.innerWidth;
       H = canvas.height = window.innerHeight;
     };
-    window.addEventListener('resize', onResize);
+    window.addEventListener('resize', handleResize);
 
-    window.addEventListener('mousemove', (e) => {
+    const handleMouse = (e) => {
       mouse.current.x = e.clientX;
       mouse.current.y = e.clientY;
-    });
+    };
+    window.addEventListener('mousemove', handleMouse);
 
-    let anim;
+    let animId;
     const draw = () => {
-      // ease translate → target
+      // ease translate toward target
       translate.current.x += (target.current.x - translate.current.x) * 0.05;
       translate.current.y += (target.current.y - translate.current.y) * 0.05;
 
@@ -90,12 +89,14 @@ function CanvasBackground() {
         ctx.fill();
       });
 
-      anim = requestAnimationFrame(draw);
+      animId = requestAnimationFrame(draw);
     };
     draw();
+
     return () => {
-      cancelAnimationFrame(anim);
-      window.removeEventListener('resize', onResize);
+      cancelAnimationFrame(animId);
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('mousemove', handleMouse);
     };
   }, []);
 
@@ -115,7 +116,7 @@ function CanvasBackground() {
 }
 
 /**
- * Panel wraps non-Home pages, fading & sliding them in
+ * Panel wraps non-Home pages, fading and sliding them in
  * inside a semi-transparent white box.
  */
 function Panel({ children }) {
@@ -149,19 +150,18 @@ function Panel({ children }) {
 
 const navStyle = {
   position: 'fixed',
-  top: '50%',
+  top: '20px',
   right: '2rem',
-  transform: 'translateY(-50%)',
   display: 'flex',
   flexDirection: 'column',
-  gap: '1rem',
+  gap: '0.75rem',
   zIndex: 10,
 };
 
 const linkStyle = {
   color: linkColor,
   textDecoration: 'none',
-  fontSize: '1.25rem',
+  fontSize: '1.1rem',
   fontFamily: `'Helvetica Neue', Arial, sans-serif`,
 };
 
@@ -235,24 +235,18 @@ export default function App() {
       <CanvasBackground />
 
       <nav style={navStyle}>
-        <Link to="/om" style={linkStyle}>
-          Om
-        </Link>
+        <Link to="/" style={linkStyle}>Hjem</Link>
+        <Link to="/om" style={linkStyle}>Om</Link>
         <Link to="/tidligere-prosjekter" style={linkStyle}>
           Tidligere prosjekter
         </Link>
-        <Link to="/priser" style={linkStyle}>
-          Priser
-        </Link>
+        <Link to="/priser" style={linkStyle}>Priser</Link>
       </nav>
 
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/om" element={<Om />} />
-        <Route
-          path="/tidligere-prosjekter"
-          element={<Tidligere />}
-        />
+        <Route path="/tidligere-prosjekter" element={<Tidligere />} />
         <Route path="/priser" element={<Priser />} />
       </Routes>
     </Router>
