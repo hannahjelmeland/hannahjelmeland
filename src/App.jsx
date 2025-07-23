@@ -180,7 +180,7 @@ function Home() {
     >
       <h1 style={{ fontSize: '4rem', margin: 0 }}>Hanna Hjelmeland</h1>
       <p style={{ fontSize: '1.5rem', margin: '0.5rem 0 0' }}>
-        Enkle nettsider til greie priser
+        Enkle nettsider
       </p>
     </div>
   );
