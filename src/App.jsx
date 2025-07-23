@@ -6,6 +6,7 @@ import {
   Route,
   Link,
   useLocation,
+  useNavigate,
 } from 'react-router-dom';
 
 // richer earth-tones
@@ -22,6 +23,41 @@ const colors = [
 
 // link color = outermost ring
 const linkColor = colors[0];
+
+// the path order for scrolling
+const routes = ['/', '/om', '/tidligere-prosjekter', '/priser'];
+
+/**
+ * Component that listens for wheel events and navigates
+ * to next/previous route based on scroll direction.
+ */
+function ScrollNavigator() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const scrolling = useRef(false);
+
+  useEffect(() => {
+    const onWheel = (e) => {
+      if (scrolling.current) return;
+      scrolling.current = true;
+      setTimeout(() => {
+        scrolling.current = false;
+      }, 600); // cooldown so you don't accidentally skip
+
+      const idx = routes.indexOf(location.pathname);
+      if (e.deltaY > 0 && idx < routes.length - 1) {
+        navigate(routes[idx + 1]);
+      } else if (e.deltaY < 0 && idx > 0) {
+        navigate(routes[idx - 1]);
+      }
+    };
+
+    window.addEventListener('wheel', onWheel, { passive: true });
+    return () => window.removeEventListener('wheel', onWheel);
+  }, [location.pathname, navigate]);
+
+  return null;
+}
 
 /**
  * CanvasBackground draws concentric, mouse‐responsive circles.
@@ -41,8 +77,8 @@ function CanvasBackground() {
     const mapping = {
       '/': { x: 0, y: 0 },
       '/om': { x: -w * 0.3, y: -h * 0.3 },
-      '/tidligere-prosjekter': { x:  w * 0.3, y: -h * 0.3 },
-      '/priser': { x: -w * 0.3, y:  h * 0.3 },
+      '/tidligere-prosjekter': { x: w * 0.3, y: -h * 0.3 },
+      '/priser': { x: -w * 0.3, y: h * 0.3 },
     };
     target.current = mapping[loc.pathname] || { x: 0, y: 0 };
   }, [loc.pathname]);
@@ -180,7 +216,7 @@ function Home() {
     >
       <h1 style={{ fontSize: '4rem', margin: 0 }}>Hanna Hjelmeland</h1>
       <p style={{ fontSize: '1.5rem', margin: '0.5rem 0 0' }}>
-        Enkle nettsider
+        Enkle nettsider til greie priser
       </p>
     </div>
   );
@@ -233,20 +269,30 @@ export default function App() {
   return (
     <Router>
       <CanvasBackground />
+      <ScrollNavigator />
 
       <nav style={navStyle}>
-        <Link to="/" style={linkStyle}>Hjem</Link>
-        <Link to="/om" style={linkStyle}>Om</Link>
+        <Link to="/" style={linkStyle}>
+          Hjem
+        </Link>
+        <Link to="/om" style={linkStyle}>
+          Om
+        </Link>
         <Link to="/tidligere-prosjekter" style={linkStyle}>
           Tidligere prosjekter
         </Link>
-        <Link to="/priser" style={linkStyle}>Priser</Link>
+        <Link to="/priser" style={linkStyle}>
+          Priser
+        </Link>
       </nav>
 
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/om" element={<Om />} />
-        <Route path="/tidligere-prosjekter" element={<Tidligere />} />
+        <Route
+          path="/tidligere-prosjekter"
+          element={<Tidligere />}
+        />
         <Route path="/priser" element={<Priser />} />
       </Routes>
     </Router>
